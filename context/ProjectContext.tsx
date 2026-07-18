@@ -20,6 +20,7 @@ export type Project = {
   repoUrl: string;
   defaultBranch?: string;
   homepage?: string;
+  isLocal?: boolean;
 };
 
 type ProjectContextType = {
@@ -174,7 +175,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!userId) return [];
 
     try {
-      const response = await api.get(`/github/repos/${userId}/${owner}/${repo}/branches`);
+      // Clean up owner and repo in case they contain full paths or slashes
+      const safeOwner = (owner || "").includes('/') ? owner.split('/')[0] : owner;
+      const safeRepo = (repo || "").includes('/') ? repo.split('/').pop() || repo : repo;
+
+      if (!safeOwner || !safeRepo) {
+        console.warn(`[WARNING] Skipping branch fetch. Missing parameters: owner=${safeOwner}, repo=${safeRepo}`);
+        return [];
+      }
+
+      console.log(`[DEBUG] refreshBranches called with: userId=${userId}, owner=${safeOwner}, repo=${safeRepo}`);
+      const response = await api.get(`/github/repos/${encodeURIComponent(userId)}/${encodeURIComponent(safeOwner)}/${encodeURIComponent(safeRepo)}/branches`);
       const branches = response.data;
       
       if (Array.isArray(branches)) {

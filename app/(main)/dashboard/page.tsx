@@ -1,18 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { 
-  Bell, ChevronDown, Folder, PlusCircle, Rocket, 
-  GitCompare, TerminalSquare, LogOut, CheckCircle2, 
+import {
+  Bell, ChevronDown, Folder, PlusCircle, Rocket,
+  GitCompare, TerminalSquare, LogOut, CheckCircle2,
   XCircle, FileText, GitBranch
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useProject } from "@/context/ProjectContext";
 import { useNotifications } from "@/context/NotificationContext";
-import { clearAuthData, getUserId } from "@/lib/storage";
+import { clearAuthData, getAuthToken, getUserId } from "@/lib/storage";
 import api from "@/lib/axios";
+import { toast } from "react-hot-toast";
 
 const formatTime = (dateString: string) => {
   const date = new Date(dateString);
@@ -29,9 +30,24 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { activeProject } = useProject();
   const { unreadCount, refreshNotifications } = useNotifications();
-  
+
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
   const [latestTask, setLatestTask] = useState<any>(null);
+  const [userName, setUserName] = useState("Developer");
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload?.username) {
+          setUserName(payload.username);
+        }
+      } catch (e) {
+        // Ignore decode error
+      }
+    }
+  }, []);
 
   const fetchTasks = async () => {
     try {
@@ -47,10 +63,10 @@ export default function DashboardScreen() {
 
   const handleGitSync = async (actionType: "push" | "pull") => {
     if (!activeProject) {
-      alert("No Project Selected");
+      toast.error("No Project Selected");
       return;
     }
-    
+
     const confirmAction = confirm(`Are you sure you want to ${actionType} for ${activeProject.name}?`);
     if (!confirmAction) return;
 
@@ -62,13 +78,13 @@ export default function DashboardScreen() {
       });
 
       if (response.status === 200 || response.status === 201) {
-        alert(`Successfully initiated git ${actionType} for ${activeProject.name}`);
+        toast.success(`Successfully initiated git ${actionType} for ${activeProject.name}`);
       } else {
-        alert("Action failed on the server");
+        toast.error("Action failed on the server");
       }
     } catch (e) {
       console.error(e);
-      alert("Could not reach the backend server");
+      toast.error("Could not reach the backend server");
     }
   };
 
@@ -85,27 +101,36 @@ export default function DashboardScreen() {
     router.replace("/");
   };
 
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingDelay = (latestTask?.status === "in-progress" || latestTask?.status === "pending") ? 2000 : 10000;
+
   useEffect(() => {
     fetchTasks();
     refreshNotifications();
-    
-    const interval = setInterval(() => {
+
+    if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+
+    pollingIntervalRef.current = setInterval(() => {
       fetchTasks();
       refreshNotifications();
-    }, 5000);
+    }, pollingDelay);
 
-    return () => clearInterval(interval);
-  }, [refreshNotifications]);
+    return () => {
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+    };
+  }, [refreshNotifications, pollingDelay]);
 
   const QUICK_ACTIONS = [
     { label: "New Task", icon: PlusCircle, color: "var(--color-accent)", action: () => router.push("/instruction") },
     { label: "Deploy", icon: Rocket, color: "var(--color-brand-blue)", action: () => router.push("/preview") },
-    { label: "Git Sync", icon: GitCompare, color: "var(--color-brand-purple)", action: () => {
-      const action = prompt(`Git Sync for ${activeProject?.name || 'Project'}:\nType 'pull' or 'push'`);
-      if (action === 'pull' || action === 'push') {
-        handleGitSync(action);
+    {
+      label: "Git Sync", icon: GitCompare, color: "var(--color-brand-purple)", action: () => {
+        const action = prompt(`Git Sync for ${activeProject?.name || 'Project'}:\nType 'pull' or 'push'`);
+        if (action === 'pull' || action === 'push') {
+          handleGitSync(action);
+        }
       }
-    }},
+    },
     { label: "Terminal", icon: TerminalSquare, color: "var(--color-foreground)", action: () => router.push("/logs") },
     { label: "Logout", icon: LogOut, color: "#FF4B4B", action: handleLogout },
   ];
@@ -126,7 +151,7 @@ export default function DashboardScreen() {
           className="mb-10 flex items-center justify-between"
         >
           <div>
-            <p className="mb-1 text-sm font-medium text-muted">Hello, Developer</p>
+            <p className="mb-1 text-sm font-medium text-muted">Hello, {userName}</p>
             <Link href="/projects" className="flex items-center gap-2 hover:opacity-80">
               <Folder className="h-5 w-5 text-accent" />
               <h1 className="text-2xl font-bold text-foreground">
@@ -135,7 +160,7 @@ export default function DashboardScreen() {
               <ChevronDown className="h-4 w-4 text-muted" />
             </Link>
           </div>
-          
+
           <Link
             href="/notifications"
             className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-surface transition-colors hover:bg-surface-light"
@@ -165,11 +190,13 @@ export default function DashboardScreen() {
                   <div
                     className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5"
                     style={{
-                      backgroundColor: latestTask.status === "completed" 
-                        ? "color-mix(in srgb, var(--color-accent) 20%, transparent)" 
+                      backgroundColor: latestTask.status === "completed"
+                        ? "color-mix(in srgb, var(--color-accent) 20%, transparent)"
                         : latestTask.status === "failed"
-                        ? "rgba(255, 75, 75, 0.2)"
-                        : "color-mix(in srgb, var(--color-accent) 15%, transparent)"
+                          ? "rgba(255, 75, 75, 0.2)"
+                          : latestTask.status === "cancelled"
+                            ? "rgba(136, 136, 136, 0.2)"
+                            : "color-mix(in srgb, var(--color-accent) 15%, transparent)"
                     }}
                   >
                     <motion.div
@@ -177,25 +204,28 @@ export default function DashboardScreen() {
                       transition={{ duration: 2, repeat: Infinity }}
                       className="h-2 w-2 rounded-full"
                       style={{
-                        backgroundColor: latestTask.status === "completed" ? "var(--color-accent)" 
-                          : latestTask.status === "failed" ? "#FF4B4B" 
-                          : "var(--color-brand-blue)"
+                        backgroundColor: latestTask.status === "completed" ? "var(--color-accent)"
+                          : latestTask.status === "failed" ? "#FF4B4B"
+                            : latestTask.status === "cancelled" ? "#888888"
+                              : "var(--color-brand-blue)"
                       }}
                     />
-                    <span 
+                    <span
                       className="text-[10px] font-black tracking-widest"
                       style={{
-                        color: latestTask.status === "completed" ? "var(--color-accent)" 
-                          : latestTask.status === "failed" ? "#FF4B4B" 
-                          : "var(--color-brand-blue)"
+                        color: latestTask.status === "completed" ? "var(--color-accent)"
+                          : latestTask.status === "failed" ? "#FF4B4B"
+                            : latestTask.status === "cancelled" ? "#888888"
+                              : "var(--color-brand-blue)"
                       }}
                     >
-                      {latestTask.status === "completed" ? "TASK SUCCESSFUL" 
-                        : latestTask.status === "failed" ? "TASK UNSUCCESSFUL" 
-                        : "AI AGENT ACTIVE"}
+                      {latestTask.status === "completed" ? "TASK SUCCESSFUL"
+                        : latestTask.status === "failed" ? "TASK UNSUCCESSFUL"
+                          : latestTask.status === "cancelled" ? "TASK CANCELLED"
+                            : "AI AGENT ACTIVE"}
                     </span>
                   </div>
-                  
+
                   <h2 className="mb-2 text-2xl font-extrabold text-foreground line-clamp-1">
                     {latestTask.description}
                   </h2>
@@ -205,19 +235,19 @@ export default function DashboardScreen() {
                       : "Initializing..."}
                   </p>
                 </div>
-                
+
                 <div className="hidden md:flex h-20 w-20 items-center justify-center rounded-[24px] border border-border bg-background shadow-lg">
                   <TerminalSquare className="h-10 w-10 text-accent" />
                 </div>
               </div>
             </div>
-            
+
             {/* Progress Bar */}
             <div className="h-1.5 w-full bg-background">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ 
-                  width: latestTask.status === "completed" ? "100%" : `${Math.min((latestTask.taskLogs?.length || 0) * 10, 95)}%` 
+                animate={{
+                  width: latestTask.status === "completed" ? "100%" : `${Math.min((latestTask.taskLogs?.length || 0) * 10, 95)}%`
                 }}
                 className="h-full bg-accent"
               />
@@ -236,7 +266,7 @@ export default function DashboardScreen() {
               onClick={item.action}
               className="group flex flex-col items-center gap-3"
             >
-              <div 
+              <div
                 className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-[20px] border transition-transform group-hover:scale-105 group-active:scale-95"
                 style={{
                   backgroundColor: `color-mix(in srgb, ${item.color} 10%, transparent)`,
@@ -259,7 +289,7 @@ export default function DashboardScreen() {
             See all
           </button>
         </div>
-        
+
         <div className="flex flex-col gap-3 md:gap-4">
           {recentTasks.length === 0 ? (
             <div className="rounded-2xl border border-border bg-surface py-12 text-center text-muted">
@@ -273,9 +303,9 @@ export default function DashboardScreen() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex flex-1 items-center gap-3">
-                    <div 
-                      className="h-2 w-2 rounded-full shrink-0" 
-                      style={{ backgroundColor: task.status === 'completed' ? 'var(--color-accent)' : 'var(--color-brand-blue)' }} 
+                    <div
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{ backgroundColor: task.status === 'completed' ? 'var(--color-accent)' : 'var(--color-brand-blue)' }}
                     />
                     <h4 className="text-base font-semibold text-foreground line-clamp-1">
                       {task.description}
@@ -285,7 +315,7 @@ export default function DashboardScreen() {
                     {formatTime(task.createdAt)}
                   </span>
                 </div>
-                
+
                 <div className="flex flex-wrap items-center gap-5">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-muted" />
@@ -295,7 +325,7 @@ export default function DashboardScreen() {
                     <GitBranch className="h-4 w-4 text-muted" />
                     <span className="text-xs text-muted">{task.branchName || "main"}</span>
                   </div>
-                  
+
                   {(task.status === "in-progress" || task.status === "pending") && (
                     <div className="ml-auto rounded-md bg-[rgba(66,133,244,0.15)] px-2.5 py-1">
                       <span className="text-[10px] font-black tracking-wider text-brand-blue">

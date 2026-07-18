@@ -7,6 +7,10 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useProject, Project } from "@/context/ProjectContext";
+import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import api from "@/lib/axios";
+import { getUserId } from "@/lib/storage";
 
 const LANG_COLORS: Record<string, string> = {
   TypeScript: "#3178C6",
@@ -20,6 +24,7 @@ const LANG_COLORS: Record<string, string> = {
 };
 
 export default function ProjectsScreen() {
+  const router = useRouter();
   const {
     projects: contextProjects,
     activeProject: contextActiveProject,
@@ -139,17 +144,79 @@ export default function ProjectsScreen() {
               <div className="p-6 md:p-8">
                 <h2 className="mb-2 text-xl font-bold text-foreground">Create New Project</h2>
                 <p className="mb-6 text-sm text-muted">
-                  Start a brand new repo, or connect an existing one
+                  Start a brand new repo, connect an existing one, or upload a local project folder.
                 </p>
 
                 <div className="flex flex-col">
+                  {/* Hidden file input for ZIP upload */}
+                  <input 
+                    type="file" 
+                    id="local-upload-input" 
+                    accept=".zip" 
+                    className="hidden" 
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const toastId = toast.loading("Uploading project...");
+                      try {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        const res = await fetch("http://localhost:3001/tasks/upload", {
+                          method: "POST",
+                          body: formData,
+                        });
+                        
+                        if (!res.ok) throw new Error("Upload failed");
+                        
+                        const data = await res.json();
+                        
+                        // Add local project to context
+                        const localProj: Project = {
+                          id: "local-" + Date.now(),
+                          name: file.name.replace('.zip', ''),
+                          owner: "local",
+                          description: "Local Project Upload",
+                          language: "Unknown",
+                          stars: 0,
+                          isPrivate: true,
+                          lastActive: new Date().toISOString(),
+                          branches: ["main"],
+                          activeBranch: "main",
+                          status: "idle",
+                          repoUrl: data.url,
+                          isLocal: true,
+                        };
+                        if (data.envContent) {
+                          try {
+                            const userId = getUserId();
+                            await api.post(`/github/repos/${userId}/local/${encodeURIComponent(localProj.name)}/env`, {
+                              envContent: data.envContent
+                            });
+                            toast.success("Environment variables auto-detected!");
+                          } catch (envErr) {
+                            console.error("Failed to save auto-detected env", envErr);
+                          }
+                        }
+
+                        handleSelectProject(localProj);
+                        toast.success("Local project uploaded!", { id: toastId });
+                        setShowNewProject(false);
+                        router.push("/instruction");
+                      } catch (err) {
+                        toast.error("Failed to upload project", { id: toastId });
+                        console.error(err);
+                      }
+                    }} 
+                  />
+
                   {[
                     {
                       icon: PlusCircle,
                       color: "var(--color-accent)",
-                      title: "New Repository",
-                      sub: "Create a blank project from scratch",
-                      action: () => alert("New Repository feature coming soon!"),
+                      title: "Upload Local Project (.zip)",
+                      sub: "Extracts and runs instantly via PocketDev",
+                      action: () => document.getElementById("local-upload-input")?.click(),
                     },
                     {
                       icon: function GithubIcon(props: any) {
@@ -169,7 +236,7 @@ export default function ProjectsScreen() {
                       color: "var(--color-brand-blue)",
                       title: "Use a Template",
                       sub: "Start from Next.js, Expo, Flask...",
-                      action: () => alert("Templates feature coming soon!"),
+                      action: () => toast("Templates feature coming soon!"),
                     },
                   ].map((option, i) => (
                     <button
