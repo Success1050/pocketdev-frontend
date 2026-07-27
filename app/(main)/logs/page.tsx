@@ -12,6 +12,7 @@ import { useProject } from "@/context/ProjectContext";
 import api from "@/lib/axios";
 import ReactMarkdown from 'react-markdown';
 import { toast } from "react-hot-toast";
+import { io, Socket } from 'socket.io-client';
 
 type LogEntry = {
   id: string;
@@ -102,9 +103,9 @@ function LogsContent() {
   useEffect(() => {
     if (!effectiveTaskId) return;
 
-    let interval: NodeJS.Timeout;
+    let socket: Socket;
 
-    const fetchTask = async () => {
+    const fetchTaskAndConnect = async () => {
       try {
         const res = await api.get(`/tasks/${effectiveTaskId}`);
         const data: TaskData = res.data;
@@ -113,21 +114,43 @@ function LogsContent() {
 
         if (data.status === "completed" || data.status === "failed" || data.status === "cancelled" || data.status === "awaiting-review") {
           setIsPolling(false);
-          if (data.status === "completed" || data.status === "failed" || data.status === "cancelled") {
-            clearInterval(interval);
-          }
         } else {
           setIsPolling(true);
+          
+          socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000');
+          
+          socket.on('connect', () => {
+            socket.emit('joinTask', effectiveTaskId);
+          });
+
+          socket.on('logAdded', (log: LogEntry) => {
+            setLogs((prev) => {
+              // Prevent duplicates if API returned it while connecting
+              if (prev.find(l => l.id === log.id)) return prev;
+              return [...prev, log];
+            });
+          });
+
+          socket.on('taskUpdated', (updatedTask: TaskData) => {
+            setTask(updatedTask);
+            if (updatedTask.status === "completed" || updatedTask.status === "failed" || updatedTask.status === "cancelled" || updatedTask.status === "awaiting-review") {
+               setIsPolling(false);
+            }
+          });
         }
       } catch (err) {
         console.error("Failed to fetch task:", err);
       }
     };
 
-    fetchTask();
-    interval = setInterval(fetchTask, 2000);
+    fetchTaskAndConnect();
 
-    return () => clearInterval(interval);
+    return () => {
+      if (socket) {
+        socket.emit('leaveTask', effectiveTaskId);
+        socket.disconnect();
+      }
+    };
   }, [effectiveTaskId]);
 
   useEffect(() => {
@@ -683,7 +706,7 @@ function LogsContent() {
           <div className="flex-1 overflow-hidden rounded-2xl border border-border bg-surface flex flex-col relative">
             <iframe 
                key={`preview-${task?.status}`}
-               src={task?.status === 'in-progress' && !task.previewUrl?.includes(taskId) ? "" : (task?.previewUrl || "")} 
+               src={task?.status === 'in-progress' && (!taskId || !task.previewUrl?.includes(taskId)) ? "" : (task?.previewUrl || "")}
                className="w-full h-full bg-white rounded-2xl" 
                title="Live Preview" 
             />
