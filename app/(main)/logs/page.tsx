@@ -119,8 +119,21 @@ function LogsContent() {
           
           socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000');
           
-          socket.on('connect', () => {
+          socket.on('connect', async () => {
             socket.emit('joinTask', effectiveTaskId);
+            
+            // Refetch to catch any events missed between initial fetch and socket connection
+            try {
+              const freshRes = await api.get(`/tasks/${effectiveTaskId}`);
+              const freshData = freshRes.data;
+              setTask(freshData);
+              setLogs(freshData.taskLogs || []);
+              if (["completed", "failed", "cancelled", "awaiting-review"].includes(freshData.status)) {
+                 setIsPolling(false);
+              }
+            } catch (err) {
+              console.error("Failed to refetch after connect:", err);
+            }
           });
 
           socket.on('logAdded', (log: LogEntry) => {
