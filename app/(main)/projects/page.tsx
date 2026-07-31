@@ -162,7 +162,8 @@ export default function ProjectsScreen() {
                       try {
                         const formData = new FormData();
                         formData.append("file", file);
-                        const res = await fetch("http://localhost:3001/tasks/upload", {
+                        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+                        const res = await fetch(`${backendUrl}/tasks/upload`, {
                           method: "POST",
                           body: formData,
                         });
