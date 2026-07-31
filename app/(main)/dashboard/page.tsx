@@ -98,7 +98,7 @@ export default function DashboardScreen() {
       }
     }
     clearAuthData();
-    router.replace("/");
+    window.location.href = "/";
   };
 
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);

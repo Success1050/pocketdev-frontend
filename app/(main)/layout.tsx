@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Folder, Play, Terminal } from "lucide-react";
+import { LayoutGrid, Folder, Play, Terminal, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { name: "Projects", href: "/projects", icon: Folder },
   { name: "Preview", href: "/preview", icon: Play },
   { name: "Logs", href: "/logs", icon: Terminal },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
