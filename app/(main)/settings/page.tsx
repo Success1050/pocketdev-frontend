@@ -2,15 +2,27 @@
 
 import { motion } from "framer-motion";
 import { RefreshCw, AlertCircle, ShieldAlert } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function SettingsPage() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (searchParams.get("auth_success") === "true") {
+      toast.success("Successfully updated GitHub permissions!");
+      // Clean up URL
+      router.replace("/settings");
+    }
+  }, [searchParams, router]);
 
   const handleReauthorize = () => {
     setIsAuthenticating(true);
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-    window.location.href = `${backendUrl}/auth/github/login?platform=web`;
+    window.location.href = `${backendUrl}/auth/github/login?platform=web_settings&prompt=consent`;
   };
 
   return (
