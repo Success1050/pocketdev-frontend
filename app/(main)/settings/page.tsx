@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { RefreshCw, AlertCircle, ShieldAlert, Zap, ExternalLink, Activity, CheckCircle } from "lucide-react";
+import { RefreshCw, AlertCircle, ShieldAlert, Zap, ExternalLink, Activity, Check, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -133,52 +133,129 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* Plan Upgrade Cards */}
-            {usageData?.tier !== 'pro' && (
-              <div className="mt-8 pt-6 border-t border-border/50">
-                <h3 className="text-sm font-bold text-foreground mb-4">Upgrade Your Power</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="rounded-xl border border-purple-500/30 bg-[rgba(138,43,226,0.05)] p-5 flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-bold text-base text-foreground">Premium Plan</span>
-                        <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">$19/mo</span>
-                      </div>
-                      <p className="text-xs text-muted mb-4">Unlock Claude Sonnet 4.5, 50 monthly tasks, and 5M token quota.</p>
-                    </div>
-                    <a
-                      href={process.env.NEXT_PUBLIC_LEMONSQUEEZY_PREMIUM_URL || "https://lemonsqueezy.com"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-500 py-2.5 px-4 font-bold text-white text-sm transition-all shadow-lg shadow-purple-500/20"
-                    >
-                      <span>Upgrade to Premium</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </div>
+            {/* Plan Upgrade Cards & Feature Breakdown */}
+            <div className="mt-8 pt-6 border-t border-border/50">
+              <div className="mb-6">
+                <h3 className="text-lg font-extrabold text-foreground">Plan Packages & Features</h3>
+                <p className="text-xs text-muted mt-1">Select the package that best fits your development frequency and AI intelligence requirements.</p>
+              </div>
 
-                  <div className="rounded-xl border border-accent/40 bg-accent/5 p-5 flex flex-col justify-between relative overflow-hidden">
-                    <div className="absolute top-0 right-0 bg-accent text-background text-[10px] font-black uppercase px-2 py-0.5 rounded-bl">Best Value</div>
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-bold text-base text-foreground">Pro Plan</span>
-                        <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-accent/20 text-accent">$49/mo</span>
-                      </div>
-                      <p className="text-xs text-muted mb-4">Unlock Claude Opus 4.6 & 4.1, Unlimited tasks, multi-repo, and 20M tokens!</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Free Plan */}
+                <div className="rounded-xl border border-border bg-background/60 p-5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-base text-foreground">Free</span>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded bg-border/40 text-muted">$0 / mo</span>
                     </div>
-                    <a
-                      href={process.env.NEXT_PUBLIC_LEMONSQUEEZY_PRO_URL || "https://lemonsqueezy.com"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 rounded-lg bg-accent hover:bg-accent/90 py-2.5 px-4 font-bold text-background text-sm transition-all shadow-lg shadow-accent/20"
-                    >
-                      <span>Get Pro Access</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
+                    <p className="text-[11px] text-muted mb-4">Essential AI code generation for lightweight hobbies and testing.</p>
+                    <div className="my-3 border-t border-border/40" />
+                    <ul className="space-y-2.5 text-xs text-muted">
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /> <span><strong className="text-foreground">Haiku 4.5</strong> model access</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /> <span><strong>5 Tasks</strong> per month</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /> <span><strong>500K tokens</strong> budget / mo</span></li>
+                      <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /> <span>Code Diff & Plan approval</span></li>
+                      <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /> <span>Push to existing branch</span></li>
+                      <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /> <span>1 file attachment & 1 task at once</span></li>
+                      <li className="flex items-start gap-2 text-muted/60"><X className="h-4 w-4 text-rose-500/60 shrink-0 mt-0.5" /> <span>No Live Web Preview</span></li>
+                      <li className="flex items-start gap-2 text-muted/60"><X className="h-4 w-4 text-rose-500/60 shrink-0 mt-0.5" /> <span>No Task Refinement loops</span></li>
+                      <li className="flex items-start gap-2 text-muted/60"><X className="h-4 w-4 text-rose-500/60 shrink-0 mt-0.5" /> <span>No Merge to Main / New Repos</span></li>
+                      <li className="flex items-start gap-2 text-muted/60"><X className="h-4 w-4 text-rose-500/60 shrink-0 mt-0.5" /> <span>No ZIP code download</span></li>
+                      <li className="flex items-start gap-2 text-muted/60"><X className="h-4 w-4 text-rose-500/60 shrink-0 mt-0.5" /> <span>No Multi-Repo support</span></li>
+                    </ul>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-border/30">
+                    <button disabled className="w-full rounded-lg bg-surface py-2.5 px-4 font-bold text-muted text-xs border border-border cursor-not-allowed text-center">
+                      {usageData?.tier === 'free' || !usageData?.tier ? 'Your Current Plan' : 'Free Tier'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Premium Plan */}
+                <div className="rounded-xl border border-purple-500/40 bg-[rgba(138,43,226,0.05)] p-5 flex flex-col justify-between relative shadow-xl shadow-purple-950/10">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-base text-foreground">Premium</span>
+                      <span className="text-xs font-extrabold px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">$9.99 / mo</span>
+                    </div>
+                    <p className="text-[11px] text-purple-200/80 mb-4">Unlock advanced reasoning with Sonnet 4.5 and full publishing workflows.</p>
+                    <div className="my-3 border-t border-purple-500/20" />
+                    <ul className="space-y-2.5 text-xs text-muted">
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" /> <span><strong className="text-purple-300">Sonnet 4.5</strong> + Haiku models</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" /> <span><strong className="text-foreground">50 Tasks</strong> per month</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" /> <span><strong className="text-foreground">5M tokens</strong> budget / mo</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" /> <span><strong>Live Web Preview</strong> (15 mins)</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" /> <span><strong>3 Refinements</strong> per task</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" /> <span><strong>Merge to Main</strong> & Publish Repos</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" /> <span>Download generated code as ZIP</span></li>
+                      <li className="flex items-start gap-2"><Check className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" /> <span>Up to 5 attachments per task</span></li>
+                      <li className="flex items-start gap-2"><Check className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" /> <span>2 concurrent tasks running</span></li>
+                      <li className="flex items-start gap-2 text-muted/60"><X className="h-4 w-4 text-rose-500/60 shrink-0 mt-0.5" /> <span>No Opus 4.6 / 4.1 access</span></li>
+                      <li className="flex items-start gap-2 text-muted/60"><X className="h-4 w-4 text-rose-500/60 shrink-0 mt-0.5" /> <span>No Multi-Repo Dual integration</span></li>
+                    </ul>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-purple-500/20">
+                    {usageData?.tier === 'premium' ? (
+                      <div className="w-full rounded-lg bg-purple-600/30 py-2.5 px-4 font-bold text-purple-300 text-xs border border-purple-500/40 text-center">
+                        Active Subscription
+                      </div>
+                    ) : (
+                      <a
+                        href={process.env.NEXT_PUBLIC_LEMONSQUEEZY_PREMIUM_URL || "https://lemonsqueezy.com"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-500 py-2.5 px-4 font-bold text-white text-xs transition-all shadow-lg shadow-purple-500/20"
+                      >
+                        <span>Upgrade to Premium</span>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pro Plan */}
+                <div className="rounded-xl border border-accent/60 bg-accent/5 p-5 flex flex-col justify-between relative overflow-hidden shadow-xl shadow-emerald-950/10">
+                  <div className="absolute top-0 right-0 bg-accent text-background text-[9px] font-black uppercase px-2.5 py-0.5 rounded-bl tracking-wider">Best Value</div>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-base text-foreground">Pro</span>
+                      <span className="text-xs font-extrabold px-2.5 py-1 rounded bg-accent/20 text-accent border border-accent/30">$24.99 / mo</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-200/80 mb-4">State-of-the-art Claude Opus power with unlimited AI generations.</p>
+                    <div className="my-3 border-t border-accent/20" />
+                    <ul className="space-y-2.5 text-xs text-muted">
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span><strong className="text-accent">All 4 Models</strong> (Opus 4.6, 4.1, Sonnet)</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span><strong className="text-foreground">Unlimited Tasks</strong> every month</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span><strong className="text-foreground">20M tokens</strong> massive monthly quota</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span><strong>Multi-Repo Integration</strong> (Dual Projects)</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span><strong>Extended Live Preview</strong> (30 mins)</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span><strong>10 Refinements</strong> per single task</span></li>
+                      <li className="flex items-start gap-2 text-foreground"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span><strong>Priority Execution</strong> Queue</span></li>
+                      <li className="flex items-start gap-2"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span>Merge to Main & Direct Publish</span></li>
+                      <li className="flex items-start gap-2"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span>Download generated code as ZIP</span></li>
+                      <li className="flex items-start gap-2"><Check className="h-4 w-4 text-accent shrink-0 mt-0.5" /> <span>Up to 10 file attachments & 3 concurrent</span></li>
+                    </ul>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-accent/20">
+                    {usageData?.tier === 'pro' ? (
+                      <div className="w-full rounded-lg bg-accent/30 py-2.5 px-4 font-bold text-accent text-xs border border-accent/40 text-center">
+                        Active Subscription
+                      </div>
+                    ) : (
+                      <a
+                        href={process.env.NEXT_PUBLIC_LEMONSQUEEZY_PRO_URL || "https://lemonsqueezy.com"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-lg bg-accent hover:bg-accent/90 py-2.5 px-4 font-bold text-background text-xs transition-all shadow-lg shadow-accent/20"
+                      >
+                        <span>Get Pro Access</span>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* GitHub Integration Section */}
