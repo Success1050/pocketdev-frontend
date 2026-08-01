@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronLeft, Trash2, Folder, GitBranch, Cpu, MessageSquare, 
   CheckCircle2, XCircle, Globe, GitPullRequest, TerminalSquare, Eye,
-  RefreshCw, Radio, X, Paperclip, Loader2
+  RefreshCw, Radio, X, Paperclip, Loader2, Home, Info
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, Suspense } from "react";
@@ -818,6 +818,22 @@ function LogsContent() {
                 </div>
 
                 <div className="flex w-full shrink-0 items-center gap-3 md:w-auto">
+                {!task?.diff?.trim() ? (
+                  <>
+                    <div className="flex items-center gap-2 flex-1 md:flex-none">
+                      <Info className="h-4 w-4 text-brand-blue shrink-0" />
+                      <span className="text-xs text-muted">No code changes were made. Live preview is running.</span>
+                    </div>
+                    <button
+                      onClick={() => router.push("/dashboard")}
+                      className="flex-1 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-background transition-transform hover:scale-105 md:flex-none flex items-center justify-center gap-2"
+                    >
+                      <Home className="h-4 w-4" />
+                      Done
+                    </button>
+                  </>
+                ) : (
+                  <>
                 <button
                   onClick={handleDiscard}
                   className="flex-1 rounded-xl border border-border px-6 py-3 text-sm font-bold text-foreground transition-colors hover:bg-surface-light md:flex-none"
@@ -853,6 +869,8 @@ function LogsContent() {
                     >
                       Merge into...
                     </button>
+                  </>
+                )}
                   </>
                 )}
               </div>
