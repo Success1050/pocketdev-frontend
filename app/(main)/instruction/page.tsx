@@ -72,23 +72,22 @@ export default function InstructionScreen() {
             const savedProvider = result.data.find((p: any) => p.providerId === saved.providerId);
             if (savedProvider) {
               setProviderId(savedProvider.providerId);
-              const savedModel = savedProvider.models.find((m: any) => m.id === saved.modelId);
+              const savedModel = savedProvider.models.find((m: any) => m.id === saved.modelId && !m.locked);
               if (savedModel) {
                 setSelectedModel(savedModel.id);
-              } else if (savedProvider.models.length > 0) {
-                setSelectedModel(savedProvider.models[0].id);
+              } else {
+                const firstUnlocked = savedProvider.models.find((m: any) => !m.locked) || savedProvider.models[0];
+                if (firstUnlocked) setSelectedModel(firstUnlocked.id);
               }
             } else if (result.data.length > 0) {
               setProviderId(result.data[0].providerId);
-              if (result.data[0].models.length > 0) {
-                setSelectedModel(result.data[0].models[0].id);
-              }
+              const firstUnlocked = result.data[0].models.find((m: any) => !m.locked) || result.data[0].models[0];
+              if (firstUnlocked) setSelectedModel(firstUnlocked.id);
             }
           } else if (result.data.length > 0) {
             setProviderId(result.data[0].providerId);
-            if (result.data[0].models.length > 0) {
-              setSelectedModel(result.data[0].models[0].id);
-            }
+            const firstUnlocked = result.data[0].models.find((m: any) => !m.locked) || result.data[0].models[0];
+            if (firstUnlocked) setSelectedModel(firstUnlocked.id);
           }
         }
       } catch (err) {
@@ -645,8 +644,8 @@ export default function InstructionScreen() {
                   className="flex-1 appearance-none bg-transparent text-sm font-semibold text-foreground outline-none cursor-pointer"
                 >
                   {availableProviders.find(p => p.providerId === providerId)?.models.map((m: any) => (
-                    <option key={m.id} value={m.id} className="bg-surface text-foreground">
-                      {m.name}
+                    <option key={m.id} value={m.id} disabled={m.locked} className="bg-surface text-foreground disabled:text-muted disabled:opacity-40">
+                      {m.name} {m.locked ? `(🔒 Requires ${m.requiredTier?.toUpperCase()} Plan)` : ''}
                     </option>
                   ))}
                   {!providerId && <option value="">Loading...</option>}

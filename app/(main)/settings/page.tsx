@@ -1,15 +1,32 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { RefreshCw, AlertCircle, ShieldAlert } from "lucide-react";
+import { RefreshCw, AlertCircle, ShieldAlert, Zap, ExternalLink, Activity, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useSearchParams, useRouter } from "next/navigation";
+import api from "@/lib/axios";
 
 export default function SettingsPage() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [usageData, setUsageData] = useState<any>(null);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchUsage = async () => {
+      try {
+        const res = await api.get("/tasks/usage");
+        setUsageData(res.data);
+      } catch (err) {
+        console.warn("Failed to fetch usage statistics", err);
+      } finally {
+        setIsLoadingUsage(false);
+      }
+    };
+    fetchUsage();
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("auth_success") === "true") {
@@ -52,6 +69,118 @@ export default function SettingsPage() {
           transition={{ delay: 0.1 }}
           className="flex flex-col gap-6"
         >
+          {/* Subscription & Usage Section */}
+          <div className="rounded-2xl border border-border bg-surface p-6 md:p-8">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[rgba(138,43,226,0.1)] border border-purple-500/30">
+                  <Zap className="h-6 w-6 text-purple-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-foreground">Plan & Consumption</h2>
+                    <span className="rounded-full bg-purple-500/20 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-purple-300 border border-purple-500/30">
+                      {usageData?.tier || "FREE"} TIER
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted max-w-xl">
+                    Track your monthly AI task quotas and token usage. Upgrade your plan to unlock premium models and unlimited generations.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quota Progress Bars */}
+            {!isLoadingUsage && usageData && (
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-xl bg-background/50 border border-border p-4">
+                  <div className="flex justify-between text-sm font-semibold mb-2">
+                    <span className="text-muted flex items-center gap-1.5">
+                      <Activity className="h-4 w-4 text-accent" /> Tasks Executed
+                    </span>
+                    <span className="text-foreground">
+                      {usageData.usage?.tasksUsed || 0} / {usageData.limits?.tasksPerMonth === -1 ? 'Unlimited' : usageData.limits?.tasksPerMonth}
+                    </span>
+                  </div>
+                  <div className="h-2.5 w-full rounded-full bg-border overflow-hidden">
+                    <div
+                      className="h-full bg-accent transition-all duration-500 rounded-full"
+                      style={{
+                        width: `${usageData.limits?.tasksPerMonth === -1 ? 100 : Math.min(100, ((usageData.usage?.tasksUsed || 0) / (usageData.limits?.tasksPerMonth || 1)) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-background/50 border border-border p-4">
+                  <div className="flex justify-between text-sm font-semibold mb-2">
+                    <span className="text-muted flex items-center gap-1.5">
+                      <Zap className="h-4 w-4 text-purple-400" /> Tokens Used
+                    </span>
+                    <span className="text-foreground">
+                      {((usageData.usage?.tokensUsed || 0) / 1000).toFixed(1)}k / {((usageData.limits?.tokensPerMonth || 500000) / 1000).toFixed(0)}k
+                    </span>
+                  </div>
+                  <div className="h-2.5 w-full rounded-full bg-border overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500 transition-all duration-500 rounded-full"
+                      style={{
+                        width: `${Math.min(100, ((usageData.usage?.tokensUsed || 0) / (usageData.limits?.tokensPerMonth || 500000)) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Plan Upgrade Cards */}
+            {usageData?.tier !== 'pro' && (
+              <div className="mt-8 pt-6 border-t border-border/50">
+                <h3 className="text-sm font-bold text-foreground mb-4">Upgrade Your Power</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="rounded-xl border border-purple-500/30 bg-[rgba(138,43,226,0.05)] p-5 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-base text-foreground">Premium Plan</span>
+                        <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">$19/mo</span>
+                      </div>
+                      <p className="text-xs text-muted mb-4">Unlock Claude Sonnet 4.5, 50 monthly tasks, and 5M token quota.</p>
+                    </div>
+                    <a
+                      href={process.env.NEXT_PUBLIC_LEMONSQUEEZY_PREMIUM_URL || "https://lemonsqueezy.com"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-500 py-2.5 px-4 font-bold text-white text-sm transition-all shadow-lg shadow-purple-500/20"
+                    >
+                      <span>Upgrade to Premium</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+
+                  <div className="rounded-xl border border-accent/40 bg-accent/5 p-5 flex flex-col justify-between relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-accent text-background text-[10px] font-black uppercase px-2 py-0.5 rounded-bl">Best Value</div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-base text-foreground">Pro Plan</span>
+                        <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-accent/20 text-accent">$49/mo</span>
+                      </div>
+                      <p className="text-xs text-muted mb-4">Unlock Claude Opus 4.6 & 4.1, Unlimited tasks, multi-repo, and 20M tokens!</p>
+                    </div>
+                    <a
+                      href={process.env.NEXT_PUBLIC_LEMONSQUEEZY_PRO_URL || "https://lemonsqueezy.com"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 rounded-lg bg-accent hover:bg-accent/90 py-2.5 px-4 font-bold text-background text-sm transition-all shadow-lg shadow-accent/20"
+                    >
+                      <span>Get Pro Access</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* GitHub Integration Section */}
           <div className="rounded-2xl border border-border bg-surface p-6 md:p-8">
             <div className="flex items-start gap-4">
