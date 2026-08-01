@@ -95,10 +95,22 @@ function LogsContent() {
   }, [taskId]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasAutoSwitchedToPreview = useRef(false);
 
   useEffect(() => {
     if (task?.status === "awaiting-approval") setActiveTab("plan");
   }, [task?.status]);
+
+  useEffect(() => {
+    if (task?.previewUrl && !hasAutoSwitchedToPreview.current && activeTab !== "preview") {
+      setActiveTab("preview");
+      hasAutoSwitchedToPreview.current = true;
+    }
+  }, [task?.previewUrl, activeTab]);
+
+  useEffect(() => {
+    hasAutoSwitchedToPreview.current = false;
+  }, [effectiveTaskId]);
 
   useEffect(() => {
     if (!effectiveTaskId) return;
